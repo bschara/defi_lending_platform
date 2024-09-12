@@ -1,0 +1,14 @@
+[package]
+name = "lending_platform"
+version = "1.0.0"
+
+[addresses]
+LFPlatform="0x89ae3f8caef8ca4740ba596ac7d629dd14f372ae3bcaf6445cdcf0e0ee7eeb55"
+
+[dev-addresses]
+
+[dependencies]
+AptosFramework = { local = "aptos-core-main/aptos-move/framework/aptos-framework" }
+AptosTokenObjects = { local = "aptos-core-main/aptos-move/framework/aptos-token-objects" }
+
+[dev-dependencies]
