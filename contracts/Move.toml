@@ -3,7 +3,7 @@ name = "lending_platform"
 version = "1.0.0"
 
 [addresses]
-LFPlatform="0x89ae3f8caef8ca4740ba596ac7d629dd14f372ae3bcaf6445cdcf0e0ee7eeb55"
+LFPlatform = "53b15477263d715a2265847e2f0156dd97e24d2938723a10d4b0c2f55158e7cc"
 
 [dev-addresses]
 

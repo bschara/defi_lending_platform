@@ -46,7 +46,7 @@ module LFPlatform::Main {
         next_date: u64,
     }
 
-    public entry fun postLoan(lender: &signer, contract: &signer, amount: u64, interest: u64, time: u64) acquires OnGoingLoans {
+    public entry fun postLoan(lender: &signer, contract: address, amount: u64, interest: u64, time: u64) acquires OnGoingLoans {
         // let borrower_balance = coin::balance<aptos_coin::AptosCoin>(signer::address_of(lender));
         // assert!(borrower_balance >= amount, 1000);
         
@@ -58,10 +58,9 @@ module LFPlatform::Main {
         assert!(borrower_balance >= amount, 1000);
         
         let withdrawn_coin = LFPlatform::BasicTokens::withdraw(signer::address_of(lender), amount);
-        LFPlatform::BasicTokens::deposit(signer::address_of(contract), withdrawn_coin);
+        LFPlatform::BasicTokens::deposit(contract, withdrawn_coin);
 
-        let loans_Address = signer::address_of(contract);
-        let tmpCounter = &mut borrow_global_mut<OnGoingLoans>(loans_Address).counter;
+        let tmpCounter = &mut borrow_global_mut<OnGoingLoans>(contract).counter;
         let counter = *tmpCounter;
         let account = signer::address_of(lender);
         let totAmount = amount + ((amount * interest) / 100);
@@ -80,8 +79,15 @@ module LFPlatform::Main {
             nft_id: 0,
         };
         *tmpCounter = counter + 1;
-        let onLoans = borrow_global_mut<OnGoingLoans>(loans_Address);
+        let onLoans = borrow_global_mut<OnGoingLoans>(contract);
         simple_map::add(&mut onLoans.list, counter, newLoan);
+
+        let event = CreateLoanEvent{
+            loan_id: counter,
+            lender: account
+        };
+
+        0x1::event::emit(event);
     }
 
     fun init_module(deployer: &signer){
@@ -127,15 +133,23 @@ module LFPlatform::Main {
     //         true
     // }
 
-    public entry fun setBorrower(contract_id: u64,contract: &signer, borrower: &signer, nft_ID: u64) acquires OnGoingLoans{
-                let addr = signer::address_of(contract);
+    public entry fun setBorrower(contract_id: u64,contract: address, borrower: &signer, nft_ID: u64) acquires OnGoingLoans{
                 let borrower_addr = signer::address_of(borrower);
                 // let borrower_balance = coin::balance<aptos_coin::AptosCoin>(borrower_addr);
                 // assert!(borrower_balance >= 10, 1000);
-                let on_going_loans = borrow_global_mut<OnGoingLoans>(addr);
+                let on_going_loans = borrow_global_mut<OnGoingLoans>(contract);
                 let contract = simple_map::borrow_mut(&mut on_going_loans.list, &contract_id);
+                let lender = contract.lender;
                 contract.borrower = borrower_addr;
                 contract.nft_id = nft_ID; 
+
+                let event = BorrowEvent {
+                    loan_id: contract_id,
+                    lender: lender,
+                    borrower: borrower_addr
+
+                };
+                0x1::event::emit(event);
     }
 
     fun closeLoan(contract: &mut LoanContract): bool {
@@ -154,8 +168,8 @@ module LFPlatform::Main {
               true 
     }
 
-    public entry fun makePayment(contract: &signer, borrower: &signer, amount: u64 , loan_id: u64) acquires OnGoingLoans {
-        let loan_contract = borrow_global_mut<OnGoingLoans>(signer::address_of(contract)).list;
+    public entry fun makePayment(borrower: &signer, contract: address, amount: u64 , loan_id: u64) acquires OnGoingLoans {
+        let loan_contract = borrow_global_mut<OnGoingLoans>(contract).list;
         let lender_address = simple_map::borrow(&loan_contract, &loan_id).lender;
         
         let payment_slip_index = getNextPayment(loan_id, contract);
@@ -170,7 +184,22 @@ module LFPlatform::Main {
         let withdrawn_coin = LFPlatform::BasicTokens::withdraw(signer::address_of(borrower), amount);
         LFPlatform::BasicTokens::deposit(lender_address, withdrawn_coin);
 
+        // let borrower_balance = coin::balance<aptos_coin::AptosCoin>(signer::address_of(borrower));
+        // assert!(borrower_balance >= amount, 1000);
+        
+        // let withdrawn_coin = coin::withdraw<aptos_coin::AptosCoin>(borrower, amount);
+        // coin::deposit<aptos_coin::AptosCoin>(lender_address, withdrawn_coin);
+
         payment_slip.paid = true;
+
+        let event = MakePaymentEvent{
+            loan_id: loan_id,
+            lender: lender_address,
+            borrower: signer::address_of(borrower),
+            amount: amount
+        };
+
+        0x1::event::emit(event);
 
 
     }
@@ -180,8 +209,8 @@ module LFPlatform::Main {
     //         true
     // }
 
-    public fun getNextPayment(loan_id: u64, contract: &signer) : u64 acquires OnGoingLoans{
-        let loan_contract = borrow_global<OnGoingLoans>(signer::address_of(contract)).list;
+    public fun getNextPayment(loan_id: u64, contract: address) : u64 acquires OnGoingLoans{
+        let loan_contract = borrow_global<OnGoingLoans>(contract).list;
         let current_loan_payments = simple_map::borrow(&loan_contract, &loan_id).payment_stubs;
 
         let duration = vector::length(&current_loan_payments);
@@ -194,31 +223,35 @@ module LFPlatform::Main {
         return NO_PAYMENT_FOUND
     }
 
-
+    #[event]
     struct CreateLoanEvent has drop, store {
         loan_id: u64 ,
         lender: address
         }
 
+    #[event]
     struct BorrowEvent has drop, store {
         loan_id: u64,
         lender: address,
         borrower: address
         }
 
+    #[event]
     struct MakePaymentEvent has drop, store {
         loan_id: u64,
         lender: address,
         borrower: address,
         amount: u64
         }
-    
+
+    #[event]
     struct LiquidateLoanEvent has drop, store {
         loan_id: u64,
         lender: address,
         borrower: address
         }    
-        
+
+    #[event]
     struct CloseLoanEvent has drop, store {
         loan_id: u64,
         lender: address,

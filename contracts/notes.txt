@@ -1,9 +1,0 @@
-lender needs to create a loan -> done
-lenders will receive payment
-lender can liquidate loan if payment is deferred
-
-borrower can choose to pick from list of loans
-borrower put nft in escrow
-borrower makes monthly installments
-borrower can choose to make the make full payment at once
-when payment is made in full loan is closed and borrower gets his nft back
