@@ -12,6 +12,7 @@ module LFPlatform::Main {
 
 
     const NO_PAYMENT_FOUND: u64 = 18446744073709551615;  // This is 2^64 - 1
+    const CALLER_IS_NOT_OWNER : u64 = 0;
 
     struct OnGoingLoans has store, key {
         list: SimpleMap<u64, LoanContract>,
@@ -47,18 +48,18 @@ module LFPlatform::Main {
     }
 
     public entry fun postLoan(lender: &signer, contract: address, amount: u64, interest: u64, time: u64) acquires OnGoingLoans {
-        // let borrower_balance = coin::balance<aptos_coin::AptosCoin>(signer::address_of(lender));
-        // assert!(borrower_balance >= amount, 1000);
-        
-        // let withdrawn_coin = coin::withdraw<aptos_coin::AptosCoin>(lender, amount);
-        // coin::deposit<aptos_coin::AptosCoin>(signer::address_of(contract), withdrawn_coin);
-        
-
-        let borrower_balance = LFPlatform::BasicTokens::balance_of(signer::address_of(lender));
+        let borrower_balance = coin::balance<aptos_coin::AptosCoin>(signer::address_of(lender));
         assert!(borrower_balance >= amount, 1000);
         
-        let withdrawn_coin = LFPlatform::BasicTokens::withdraw(signer::address_of(lender), amount);
-        LFPlatform::BasicTokens::deposit(contract, withdrawn_coin);
+        let withdrawn_coin = coin::withdraw<aptos_coin::AptosCoin>(lender, amount);
+        coin::deposit<aptos_coin::AptosCoin>(contract, withdrawn_coin);
+        
+
+        // let borrower_balance = LFPlatform::BasicTokens::balance_of(signer::address_of(lender));
+        // assert!(borrower_balance >= amount, 1000);
+        
+        // let withdrawn_coin = LFPlatform::BasicTokens::withdraw(signer::address_of(lender), amount);
+        // LFPlatform::BasicTokens::deposit(contract, withdrawn_coin);
 
         let tmpCounter = &mut borrow_global_mut<OnGoingLoans>(contract).counter;
         let counter = *tmpCounter;
@@ -178,17 +179,17 @@ module LFPlatform::Main {
 
         assert!(payment_slip.amount_next > 0, 10);
 
-        let borrower_balance = LFPlatform::BasicTokens::balance_of(signer::address_of(borrower));
-        assert!(borrower_balance >= amount, 1000);
-        
-        let withdrawn_coin = LFPlatform::BasicTokens::withdraw(signer::address_of(borrower), amount);
-        LFPlatform::BasicTokens::deposit(lender_address, withdrawn_coin);
-
-        // let borrower_balance = coin::balance<aptos_coin::AptosCoin>(signer::address_of(borrower));
+        // let borrower_balance = LFPlatform::BasicTokens::balance_of(signer::address_of(borrower));
         // assert!(borrower_balance >= amount, 1000);
         
-        // let withdrawn_coin = coin::withdraw<aptos_coin::AptosCoin>(borrower, amount);
-        // coin::deposit<aptos_coin::AptosCoin>(lender_address, withdrawn_coin);
+        // let withdrawn_coin = LFPlatform::BasicTokens::withdraw(signer::address_of(borrower), amount);
+        // LFPlatform::BasicTokens::deposit(lender_address, withdrawn_coin);
+
+        let borrower_balance = coin::balance<aptos_coin::AptosCoin>(signer::address_of(borrower));
+        assert!(borrower_balance >= amount, 1000);
+        
+        let withdrawn_coin = coin::withdraw<aptos_coin::AptosCoin>(borrower, amount);
+        coin::deposit<aptos_coin::AptosCoin>(lender_address, withdrawn_coin);
 
         payment_slip.paid = true;
 
