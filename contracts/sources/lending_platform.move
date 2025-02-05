@@ -259,7 +259,8 @@ module LFPlatform::Main {
         borrower: address
         }
     
-        #[test(lender=@0x123, contract=@0x01, framework = @0x1, borrower = @0x12312)]
+    
+    #[test(lender=@0x123, contract=@0x01, framework = @0x1, borrower = @0x12312)]
         public fun test_postLoan(lender: &signer, contract: &signer, framework: signer, borrower: &signer)  acquires OnGoingLoans{
                 timestamp::set_time_has_started_for_testing(&framework);
                 let on_going_loans = OnGoingLoans { counter: 0, list: simple_map::new<u64, LoanContract>() };
